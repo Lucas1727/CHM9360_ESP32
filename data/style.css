@@ -4,12 +4,13 @@
 
 #title {
     margin: auto;
-    background-image: url("assests/pictures/Banner.png");
+    background: #95e599;
     border: 4px solid #4CAF50;
     min-width: 600px;
-    max-width: 800px;
+    max-width: 1000px;
     width: 70%;
-    height: 135px;
+    min-height: 120px;
+    max-height: 180px;
     padding: 10px;
     border-radius: 35px;
 
@@ -20,7 +21,6 @@
 }
 
 body {
-    background-image: url("assests/pictures/Background.jpg");
     background-color: turquoise;
     min-height: 800px;
     padding: 20px;
@@ -32,7 +32,6 @@ body {
 
 nav {
     line-height: 30px;
-    background-image: url("assests/pictures/Banner.png");
     height: 400px;
     min-width: 100px;
     max-width: 200px;
@@ -50,8 +49,8 @@ nav {
 
 section {
     margin: auto;
-    height: 250px;
-    width: 80%;
+    height: 100%;
+    width: 100%;
     padding: 10px;
 
     font-family: Arial, Helvetica, sans-serif;
@@ -108,16 +107,50 @@ section {
 }
 
 .slider {
-  -webkit-appearance: none;
-  width: 50%;
-  height: 25px;
-  background: #d3d3d3;
-  outline: none;
-  opacity: 0.7;
-  -webkit-transition: .2s;
-  transition: opacity .2s;
+    -webkit-appearance: none;
+    width: 50%;
+    height: 25px;
+    border: 4px solid #4CAF50;
+    border-radius: 212px;
+    background: #95e599;
+    outline: none;
+    opacity: 0.7;
+    -webkit-transition: .2s;
+    transition: opacity .2s;
+}
+
+.slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #4CAF50;
+    cursor: pointer;
 }
 
 .slider:hover {
-  opacity: 1;
+    opacity: 1;
+}
+
+/* Style the button that is used to open and close the collapsible content */
+.collapsible {
+    background-color: #95e599;
+    color: black;
+    border: 4px solid #4CAF50;
+    border-radius: 8px;
+    box-shadow: 0 8px 16px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+}
+
+/* Add a background color to the button if it is clicked on (add the .active class with JS), and when you move the mouse over it (hover) */
+.collapsible:hover {
+    background-color: #4CAF50;
+}
+
+/* Style the collapsible content. Note: hidden by default */
+.content {
+    padding: 16px 32px;
+    display: none;
+    overflow: hidden;
+    background-color: turquoise;
 }

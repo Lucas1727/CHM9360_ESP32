@@ -11,7 +11,7 @@
 #include <PubSubClient.h>   //https://github.com/knolleary/pubsubclient
 
 #include <ESPAsyncWebServer.h>    //https://github.com/me-no-dev/ESPAsyncWebServer
-#include <SPIFFS.h>
+#include <SPIFFS.h>   //https://github.com/me-no-dev/ESPAsyncWebServer
 
 #define CLK 14
 #define OE  13
@@ -42,8 +42,8 @@ const int   daylightOffset_sec = 0;
 char       displayOption[8],
            weatherServer[] = "api.openweathermap.org";
 
-String     apiKey = "c557ec940c4b9d765f88eeadc6f223ad",
-           location = "aberystwyth,GB",
+String     apiKey = "",
+           location = "",
            weatherType = "",
            ipAddress = "";
 
@@ -57,7 +57,8 @@ int        hue = 0,
            weatherTemp = 0,
            weatherWindSpd = 0,
            dly = 50,
-           updateTime = 20; // Seconds before the display updates information from internet
+           updateTime = 20,
+           connectedToMQTT = 0; // Seconds before the display updates information from internet
 
 int8_t     sat = 255,
            val = 255;
@@ -105,7 +106,7 @@ void setup()
   client.setServer(mqttServer, mqttPort);
   client.setCallback(callback);
 
-  strncpy(displayOption, "clock", 8);
+  strncpy(displayOption, "ip", 8);
 
   // Initialize and get the time
   configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
@@ -137,24 +138,26 @@ void setup()
   // Start server
   server.begin();
 
-  printLocalTimeLED();
+  printIPAddress();
 
   connectToMQTT();
 }
 
 void connectToMQTT() {
-  while (!client.connected()) {
+  if (!client.connected()) {
     Serial.println("Connecting to MQTT...");
 
     if (client.connect("ESP32Client-1727")) {
       Serial.println("connected");
+      connectedToMQTT = 1;
     } else {
       Serial.print("failed with state ");
       Serial.print(client.state());
-      delay(2000);
+      connectedToMQTT = 0;
     }
   }
   client.subscribe("SmartDisplay");
+  //client.subscribe("sonoff");
 }
 
 // Replaces placeholder with IP Address
@@ -213,8 +216,8 @@ void checkJsonForCommand(char* payload) {
     strncpy(displayOption, "message", 8);
     strcpy(displayText, text);
   } else if (strcmp(command, "weather") == 0) {
-    //actionTimer = 100;
     strncpy(displayOption, "weather", 8);
+    location = text;
   } else if (strcmp(command, "textCol") == 0) {
     colourRed = JSONDoc["colR"];
     colourGreen = JSONDoc["colG"];
@@ -237,6 +240,15 @@ void configModeCallback (WiFiManager *myWiFiManager) {
   Serial.println(WiFi.softAPIP());
   Serial.println(myWiFiManager->getConfigPortalSSID());
 
+}
+
+// Prints the IP address of the smart display
+void printIPAddress() {
+  matrix.setCursor(1, 0);
+  matrix.print("IP:");
+
+  matrix.setCursor(textX, 8);
+  matrix.print(ipAddress);
 }
 
 // Gets the local time from pool.ntp.org and prints it on LED matrix
@@ -289,8 +301,6 @@ void printWeatherLED() {
   } else {
     matrix.drawBitmap(24, 0,  weatherErrorBitmap, 8, 8, matrix.Color333(1, 0, 0));
   }
-
-  //matrix.print(actionTimer);
 }
 
 // Sends a request to api.openweathermap.org to get weather info for a location in JSON
@@ -312,32 +322,35 @@ void getWeather() {
     espClient.println("Host: api.openweathermap.org");
     espClient.println("Connection: close");
     espClient.println();
+
+    if (espClient.connected()) {
+      while (espClient.connected()) {
+        line = espClient.readStringUntil('\n');
+        Serial.println(line);
+      }
+
+      StaticJsonDocument<6000> JSONDoc;
+
+      DeserializationError error = deserializeJson(JSONDoc, line);
+
+      if (error) {
+        Serial.print(F("deserializeJson() failed: "));
+        Serial.println(error.c_str());
+      } else {
+        weatherTemp = JSONDoc["list"][0]["main"]["temp"];
+        weatherWindSpd = JSONDoc["list"][0]["wind"]["speed"];
+        String temp = JSONDoc["list"][0]["weather"][0]["main"];
+        weatherType = temp;
+
+        Serial.print("Weather: ");
+        Serial.println(weatherType);
+
+        return;
+      }
+    }
   } else {
     Serial.println("unable to connect");
-  }
-
-  while (espClient.connected()) {
-    line = espClient.readStringUntil('\n');
-    Serial.println(line);
-  }
-
-  StaticJsonDocument<6000> JSONDoc;
-
-  DeserializationError error = deserializeJson(JSONDoc, line);
-
-  if (error) {
-    Serial.print(F("deserializeJson() failed: "));
-    Serial.println(error.c_str());
-  } else {
-    weatherTemp = JSONDoc["list"][0]["main"]["temp"];
-    weatherWindSpd = JSONDoc["list"][0]["wind"]["speed"];
-    String temp = JSONDoc["list"][0]["weather"][0]["main"];
-    weatherType = temp;
-
-    Serial.print("Weather: ");
-    Serial.println(weatherType);
-
-    return;
+    matrix.drawPixel(31, 0, matrix.Color333(0, 0, 7));
   }
 }
 
@@ -353,8 +366,10 @@ void  updateAction() {
       getWeather();
     }
     actionTimer = 0;
+    connectToMQTT();
   } else {
     actionTimer += 1;
+    //Serial.println(actionTimer);
   }
 }
 
@@ -369,17 +384,24 @@ void currentDisplay() {
     matrix.print(F2(displayText));
     textMin = strlen(displayText) * -6;
   } else if (strcmp(displayOption, "message") == 0) {
+    sideScroll = 1;
     matrix.setCursor(textX, 8);
     matrix.print(F2(displayText));
     textMin = strlen(displayText) * -6;
   } else if (strcmp(displayOption, "weather") == 0) {
+    actionTimer == 399;
     printWeatherLED();
+  } else if (strcmp(displayOption, "ip") == 0) {
+    sideScroll = 1;
+    printIPAddress();
+    textMin = 13 * -6;
   } else if (strcmp(displayOption, "youtube") == 0) {
     printYoutubeLED();
     matrix.setCursor(0, 8);
     matrix.print(F2("Subs"));
   } else {
-    matrix.print(F2("Default"));
+    sideScroll = 1;
+    matrix.print(F2("No Function"));
   }
 }
 
@@ -395,6 +417,13 @@ void rainbowTextColour() {
     matrix.setTextColor(matrix.ColorHSV(hue, sat, val, true));
     hue += 7;
     if (hue >= 1536) hue -= 1536;
+  }
+}
+
+// Check if MQTT server is connected, if not show error LED
+void checkMQTTconnect() {
+  if (connectedToMQTT == 0) {
+    matrix.drawPixel(31, 0, matrix.Color333(7, 0, 0));
   }
 }
 
@@ -414,11 +443,11 @@ void loop()
 #endif
 
   client.loop();
-  connectToMQTT();
 
   rainbowTextColour();
   currentDisplay();
   updateAction();
+  checkMQTTconnect();
 
   // Update display
   matrix.swapBuffers(false);

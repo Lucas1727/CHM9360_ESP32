@@ -11,28 +11,38 @@
     <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
 </head>
 
-<body>
+<body onload="StartUp()">
 
     <div id="title">
         <h1>ESP32 IoT Smart Display Panel</h1>
-        <p>IP Address: <strong> %IPADDRESS%</strong></p>
-    </div><br>
+    </div>
 
     <br><br>
 
     <section>
         <form>
-            <input class="buttonSmall button1" id="textInput" type="text" name="firstname" value="">
+            Custom Message: <input class="buttonSmall button1" id="textInput" type="text" value="">
             <input class="buttonSmall button1" type="reset">
+            <button class="button button1" onclick="MQTTSendMessage()">Show Message</button>
         </form>
 
-        <button class="button button1" onclick="MQTTSendMessage()">Show Message</button><br>
+        <br><br>
+
+        <form>
+            Weather: <input class="buttonSmall button1" id="textWeatherInput" type="text" value="">
+            <input class="buttonSmall button1" type="reset">
+            <button class="button button1" onclick="MQTTSendWeather()">Show Weather</button>
+        </form>
 
         <br>
 
-        <button class="button button1" onclick="MQTTSendClock()">Clock</button>
-        <button class="button button1" onclick="MQTTSendWeather()">Weather</button>
-        <button class="button button1" onclick="MQTTSendTestMessage()">Show Test MQTT Message</button>
+        Weather Location: <div id="weatherLocation"> N/A</div>
+
+        <br><br>
+
+        <button class="button button1" onclick="MQTTSendClock()">Show Clock</button>
+        <button class="button button1" onclick="MQTTSendSensorRequest()">Show Sensor Info</button>
+        <button class="button button1" onclick="MQTTSendYoutube()">Show YouTube subs</button>
 
         <br><br>
 
@@ -47,28 +57,41 @@
 
         <button class="button button1" onclick="MQTTChangeTextColour()">Change Text Colour</button>
 
-        <button class="button button1" onclick="MQTTSendYoutube()">Show YouTube subs</button>
-
-
         <br><br>
 
-        <div id="status">Connection Status: Not Connected</div>
-        <br>
-        <form name="connform" action="" onsubmit="return MQTTconnect()">
-
-            Server: <input type="text" name="server"><br><br>
-            Port: <input type="text" name="port"><br><br>
-            <input type="submit" value="Connect">
-        </form>
-        <hr>
-        <form name="smessage" action="" onsubmit="return send_message()">
-
-            Message: <input type="text" name="message"><br><br>
-            Publish Topic: <input type="text" name="Ptopic"><br><br>
-            <input type="submit" value="Submit">
-        </form>
         Messages:<p id="messages"></p>
 
+    </section>
+
+    <hr>
+
+    <section>
+        <p>ESP32 IP Address: <strong> %IPADDRESS%</strong></p>
+
+        <div id="status">Connection Status: Not Connected</div>
+
+        <br>
+
+        <button class="button collapsible">Connection Settings</button>
+        <div class="content">
+
+            <form name="connform" action="" onsubmit="return MQTTconnect()">
+
+                MQTT Server: <input class="buttonSmall button1" id="MQTTHostInput" type="text" name="server" value="">
+                Port: <input class="buttonSmall button1" id="MQTTPortInput" type="text" name="port" value="">
+                <input class="buttonSmall button1" type="submit" value="Connect">
+            </form>
+            
+            <br>
+
+            <form>
+                OpenWeatherMap API Key: <input class="buttonSmall button1" id="OpenWeatherMapAPIKeyInput" type="text" value="">
+                <input class="buttonSmall button1" type="reset">
+                <button class="button button1" onclick="MQTTSendOpenWeatherMapAPIKey()">Change key</button>
+            </form>
+        </div>
+
+        <br>
     </section>
 
 </body></html>

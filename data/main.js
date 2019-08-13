@@ -1,12 +1,53 @@
-var webSocket = "ws://192.168.1.45:80";
 var connected_flag = 0
 var mqtt;
 var reconnectTimeout = 2000;
-var host = "192.168.1.49";
-var port = 9001;
+var host;
+var port;
+var coll = document.getElementsByClassName("button collapsible");
+var i;
 
-function JavaScriptTest() {
-    alert("Command recieved successfully!");
+function StartUp() {
+    DataStorage();
+    MQTTconnect();
+    SettingsCollapse();
+}
+
+function SettingsCollapse() {
+    for (i = 0; i < coll.length; i++) {
+        coll[i].addEventListener("click", function () {
+            this.classList.toggle("active");
+            var content = this.nextElementSibling;
+            if (content.style.display === "block") {
+                content.style.display = "none";
+            } else {
+                content.style.display = "block";
+            }
+        });
+    }
+}
+
+function DataStorage() {
+
+    if (!localStorage.weather) {
+        localStorage.weather = "Rio";
+    }
+
+    if (!localStorage.MQTThost) {
+        localStorage.MQTThost = "192.168.1.49";
+    }
+
+    if (!localStorage.MQTTport) {
+        localStorage.MQTTport = "9001";
+    }
+
+    host = localStorage.MQTThost;
+    port = localStorage.MQTTport;
+
+    document.getElementById("MQTTHostInput").value = host;
+    document.getElementById("MQTTPortInput").value = port;
+
+    document.getElementById("weatherLocation").innerHTML = localStorage.weather;
+
 }
 
 function MQTTSendMessage() {
@@ -50,10 +91,7 @@ function MQTTSendClock() {
 
     var topic = "SmartDisplay";
     message = new Paho.MQTT.Message(JSON.stringify(msg));
-    if (topic == "")
-        message.destinationName = "test-topic"
-    else
-        message.destinationName = topic;
+    message.destinationName = topic;
     mqtt.send(message);
 }
 
@@ -67,21 +105,21 @@ function MQTTSendWeather() {
     }
     var msg = {
         command: "weather",
-        text: "Aberystwyth,GB"
+        text: document.getElementById("textWeatherInput").value
     };
 
     console.log(msg);
 
+    localStorage.weather = document.getElementById("textWeatherInput").value;
+    document.getElementById("weatherLocation").innerHTML = localStorage.weather;
+
     var topic = "SmartDisplay";
     message = new Paho.MQTT.Message(JSON.stringify(msg));
-    if (topic == "")
-        message.destinationName = "test-topic"
-    else
-        message.destinationName = topic;
+    message.destinationName = topic;
     mqtt.send(message);
 }
 
-function MQTTSendTestMessage() {
+function MQTTSendOpenWeatherMapAPIKey() {
     document.getElementById("messages").innerHTML = "";
     if (connected_flag == 0) {
         out_msg = "<b>Not Connected so can't send</b>"
@@ -90,18 +128,36 @@ function MQTTSendTestMessage() {
         return false;
     }
     var msg = {
-        command: "message",
-        text: "Test"
+        command: "OWMKey",
+        text: document.getElementById("OpenWeatherMapAPIKeyInput").value
     };
 
     console.log(msg);
 
     var topic = "SmartDisplay";
     message = new Paho.MQTT.Message(JSON.stringify(msg));
-    if (topic == "")
-        message.destinationName = "test-topic"
-    else
-        message.destinationName = topic;
+    message.destinationName = topic;
+    mqtt.send(message);
+}
+
+function MQTTSendSensorRequest() {
+    document.getElementById("messages").innerHTML = "";
+    if (connected_flag == 0) {
+        out_msg = "<b>Not Connected so can't send</b>"
+        console.log(out_msg);
+        document.getElementById("messages").innerHTML = out_msg;
+        return false;
+    }
+    var msg = {
+        command: "sensor",
+        text: "text"
+    };
+
+    console.log(msg);
+
+    var topic = "SmartDisplay";
+    message = new Paho.MQTT.Message(JSON.stringify(msg));
+    message.destinationName = topic;
     mqtt.send(message);
 }
 
@@ -122,10 +178,7 @@ function MQTTSendYoutube() {
 
     var topic = "SmartDisplay";
     message = new Paho.MQTT.Message(JSON.stringify(msg));
-    if (topic == "")
-        message.destinationName = "test-topic"
-    else
-        message.destinationName = topic;
+    message.destinationName = topic;
     mqtt.send(message);
 }
 
@@ -154,10 +207,7 @@ function MQTTChangeTextColour() {
 
     var topic = "SmartDisplay";
     message = new Paho.MQTT.Message(JSON.stringify(msg));
-    if (topic == "")
-        message.destinationName = "test-topic"
-    else
-        message.destinationName = topic;
+    message.destinationName = topic;
     mqtt.send(message);
 }
 
@@ -202,10 +252,14 @@ function MQTTconnect() {
         console.log("ports");
         port = parseInt(p);
         console.log("port" + port);
+    } else {
+        port = localStorage.MQTTport;
     }
     if (s != "") {
-        //host=s;
+        host = s;
         console.log("host");
+    } else {
+        host = localStorage.MQTThost;
     }
 
     console.log("connecting to " + host + " " + port);
