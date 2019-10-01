@@ -21,7 +21,7 @@
 
     <section>
         <form>
-            Custom Message: <input class="buttonSmall button1" id="textInput" type="text" value="">
+            Custom Message (50 Character Max): <input class="buttonSmall button1" id="textInput" type="text" value="">
             <input class="buttonSmall button1" type="reset">
             <button class="button button1" onclick="MQTTSendMessage()">Show Message</button>
         </form>
@@ -42,9 +42,34 @@
 
         <button class="button button1" onclick="MQTTSendClock()">Show Clock</button>
         <button class="button button1" onclick="MQTTSendSensorRequest()">Show Sensor Info</button>
-        <button class="button button1" onclick="MQTTSendYoutube()">Show YouTube subs</button>
 
         <br><br>
+
+        <form>
+            Youtube Channel ID: <input class="buttonSmall button1" id="textYouTubeInput" type="text" value="">
+            <input class="buttonSmall button1" type="reset">
+            <button class="button button1" onclick="MQTTSendYoutube()">Show YouTube subscribers</button>
+        </form>
+
+        <br>
+
+        <form>
+            Transition Mode:
+            Message <input id="transitionModeMessage" type="checkbox">
+            Weather <input id="transitionModeWeather" type="checkbox">
+            Sensor <input id="transitionModeSensor" type="checkbox">
+            YouTube <input id="transitionModeYouTube" type="checkbox">
+            <button class="button button1" onclick="MQTTSendTransitionMode()">Set Transition Modules</button>
+        </form>
+
+        <br>
+
+        <form>
+            Transition Length (Seconds): <input class="buttonSmall button1" id="textTransitionTimeInput" type="number" min="1" max="60" value="10">
+            <button class="button button1" onclick="MQTTSendTransitionTime()">Set Transition Length</button>
+        </form>
+
+        <br>
 
         <div class="slidecontainer">
             <br>Red
@@ -76,18 +101,25 @@
         <div class="content">
 
             <form name="connform" action="" onsubmit="return MQTTconnect()">
-
                 MQTT Server: <input class="buttonSmall button1" id="MQTTHostInput" type="text" name="server" value="">
                 Port: <input class="buttonSmall button1" id="MQTTPortInput" type="text" name="port" value="">
                 <input class="buttonSmall button1" type="submit" value="Connect">
             </form>
-            
+
             <br>
 
             <form>
                 OpenWeatherMap API Key: <input class="buttonSmall button1" id="OpenWeatherMapAPIKeyInput" type="text" value="">
                 <input class="buttonSmall button1" type="reset">
                 <button class="button button1" onclick="MQTTSendOpenWeatherMapAPIKey()">Change key</button>
+            </form>
+
+            <br>
+
+            <form>
+                YouTube Data API Key: <input class="buttonSmall button1" id="YouTubeAPIKeyInput" type="text" value="">
+                <input class="buttonSmall button1" type="reset">
+                <button class="button button1" onclick="MQTTSendYouTubeAPIKey()">Change key</button>
             </form>
         </div>
 

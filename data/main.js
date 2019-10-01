@@ -5,11 +5,29 @@ var host;
 var port;
 var coll = document.getElementsByClassName("button collapsible");
 var i;
+var msgJSON = {
+    command: "",
+    text: ""
+};
 
 function StartUp() {
     DataStorage();
     MQTTconnect();
     SettingsCollapse();
+    ESP32SetupMQTT();
+}
+
+function ESP32SetupMQTT() {
+    xhr = new XMLHttpRequest();
+    var url = "/";
+    xhr.open("POST", url, true);
+    xhr.setRequestHeader("Content-type", "application/json");
+    xhr.onreadystatechange = function () {
+        if (xhr.readyState == 4 && xhr.status == 200) {
+            document.getElementById("status").innerHTML = this.responseText;
+        }
+    }
+    xhr.send(host);
 }
 
 function SettingsCollapse() {
@@ -33,11 +51,19 @@ function DataStorage() {
     }
 
     if (!localStorage.MQTThost) {
-        localStorage.MQTThost = "192.168.1.49";
+        localStorage.MQTThost = "192.168.1.00";
     }
 
     if (!localStorage.MQTTport) {
-        localStorage.MQTTport = "9001";
+        localStorage.MQTTport = "8000";
+    }
+
+    if (!localStorage.OWMAPIKey) {
+        localStorage.OWMAPIKey = "xxxx";
+    }
+
+    if (!localStorage.YTAPIKey) {
+        localStorage.YTAPIKey = "xxxx";
     }
 
     host = localStorage.MQTThost;
@@ -47,10 +73,33 @@ function DataStorage() {
     document.getElementById("MQTTPortInput").value = port;
 
     document.getElementById("weatherLocation").innerHTML = localStorage.weather;
-
+    document.getElementById("OpenWeatherMapAPIKeyInput").value = localStorage.OWMAPIKey;
+    document.getElementById("YouTubeAPIKeyInput").value = localStorage.YTAPIKey;
 }
 
-function MQTTSendMessage() {
+function MQTTSendTransitionMode() {
+    var msg = '{"command":"transMode","text":{' +
+        '"Message":' + document.getElementById("transitionModeMessage").checked + ',' +
+        '"Weather":' + document.getElementById("transitionModeWeather").checked + ',' +
+        '"Clock":true,' +
+        '"Sensor":' + document.getElementById("transitionModeSensor").checked + ',' +
+        '"YouTube":' + document.getElementById("transitionModeYouTube").checked + '}}'
+
+    msgJSON = JSON.parse(msg);
+
+    MQTTSendJSONData();
+}
+
+function MQTTSendTransitionTime() {
+    msgJSON = {
+        command: "transTime",
+        value: document.getElementById("textTransitionTimeInput").value
+    };
+
+    MQTTSendJSONData();
+}
+
+function MQTTSendJSONData() {
     document.getElementById("messages").innerHTML = "";
     if (connected_flag == 0) {
         out_msg = "<b>Not Connected so can't send</b>"
@@ -58,15 +107,11 @@ function MQTTSendMessage() {
         document.getElementById("messages").innerHTML = out_msg;
         return false;
     }
-    var msg = {
-        command: "message",
-        text: document.getElementById("textInput").value
-    };
 
-    console.log(msg);
+    console.log(msgJSON);
 
     var topic = "SmartDisplay";
-    message = new Paho.MQTT.Message(JSON.stringify(msg));
+    message = new Paho.MQTT.Message(JSON.stringify(msgJSON));
     if (topic == "")
         message.destinationName = "test-topic"
     else
@@ -74,141 +119,93 @@ function MQTTSendMessage() {
     mqtt.send(message);
 }
 
+function MQTTSendMessage() {
+    msgJSON = {
+        command: "message",
+        text: document.getElementById("textInput").value
+    };
+
+    MQTTSendJSONData();
+}
+
 function MQTTSendClock() {
-    document.getElementById("messages").innerHTML = "";
-    if (connected_flag == 0) {
-        out_msg = "<b>Not Connected so can't send</b>"
-        console.log(out_msg);
-        document.getElementById("messages").innerHTML = out_msg;
-        return false;
-    }
-    var msg = {
+    msgJSON = {
         command: "clock",
         text: "text"
     };
 
-    console.log(msg);
-
-    var topic = "SmartDisplay";
-    message = new Paho.MQTT.Message(JSON.stringify(msg));
-    message.destinationName = topic;
-    mqtt.send(message);
+    MQTTSendJSONData();
 }
 
 function MQTTSendWeather() {
-    document.getElementById("messages").innerHTML = "";
-    if (connected_flag == 0) {
-        out_msg = "<b>Not Connected so can't send</b>"
-        console.log(out_msg);
-        document.getElementById("messages").innerHTML = out_msg;
-        return false;
-    }
-    var msg = {
+    MQTTSendOpenWeatherMapAPIKey();
+
+    msgJSON = {
         command: "weather",
         text: document.getElementById("textWeatherInput").value
     };
 
-    console.log(msg);
-
     localStorage.weather = document.getElementById("textWeatherInput").value;
     document.getElementById("weatherLocation").innerHTML = localStorage.weather;
 
-    var topic = "SmartDisplay";
-    message = new Paho.MQTT.Message(JSON.stringify(msg));
-    message.destinationName = topic;
-    mqtt.send(message);
+    MQTTSendJSONData();
 }
 
 function MQTTSendOpenWeatherMapAPIKey() {
-    document.getElementById("messages").innerHTML = "";
-    if (connected_flag == 0) {
-        out_msg = "<b>Not Connected so can't send</b>"
-        console.log(out_msg);
-        document.getElementById("messages").innerHTML = out_msg;
-        return false;
-    }
-    var msg = {
+    msgJSON = {
         command: "OWMKey",
         text: document.getElementById("OpenWeatherMapAPIKeyInput").value
     };
 
-    console.log(msg);
+    localStorage.OWMAPIKey = document.getElementById("OpenWeatherMapAPIKeyInput").value;
 
-    var topic = "SmartDisplay";
-    message = new Paho.MQTT.Message(JSON.stringify(msg));
-    message.destinationName = topic;
-    mqtt.send(message);
+    MQTTSendJSONData();
+}
+
+function MQTTSendYouTubeAPIKey() {
+    msgJSON = {
+        command: "YTKey",
+        text: document.getElementById("YouTubeAPIKeyInput").value
+    };
+
+    localStorage.YTAPIKey = document.getElementById("YouTubeAPIKeyInput").value;
+
+    MQTTSendJSONData();
 }
 
 function MQTTSendSensorRequest() {
-    document.getElementById("messages").innerHTML = "";
-    if (connected_flag == 0) {
-        out_msg = "<b>Not Connected so can't send</b>"
-        console.log(out_msg);
-        document.getElementById("messages").innerHTML = out_msg;
-        return false;
-    }
-    var msg = {
+    msgJSON = {
         command: "sensor",
         text: "text"
     };
 
-    console.log(msg);
-
-    var topic = "SmartDisplay";
-    message = new Paho.MQTT.Message(JSON.stringify(msg));
-    message.destinationName = topic;
-    mqtt.send(message);
+    MQTTSendJSONData();
 }
 
 function MQTTSendYoutube() {
-    document.getElementById("messages").innerHTML = "";
-    if (connected_flag == 0) {
-        out_msg = "<b>Not Connected so can't send</b>"
-        console.log(out_msg);
-        document.getElementById("messages").innerHTML = out_msg;
-        return false;
-    }
-    var msg = {
-        command: "weather",
-        text: "Aberystwyth,GB"
+    MQTTSendYouTubeAPIKey();
+
+    msgJSON = {
+        command: "youtube",
+        text: document.getElementById("textYouTubeInput").value
     };
 
-    console.log(msg);
-
-    var topic = "SmartDisplay";
-    message = new Paho.MQTT.Message(JSON.stringify(msg));
-    message.destinationName = topic;
-    mqtt.send(message);
+    MQTTSendJSONData();
 }
 
 function MQTTChangeTextColour() {
-
-    document.getElementById("messages").innerHTML = "";
-    if (connected_flag == 0) {
-        out_msg = "<b>Not Connected so can't send</b>"
-        console.log(out_msg);
-        document.getElementById("messages").innerHTML = out_msg;
-        return false;
-    }
-
     var redSlider = document.getElementById("redSlider");
     var greenSlider = document.getElementById("greenSlider");
     var blueSlider = document.getElementById("blueSlider");
 
-    var msg = {
+    msgJSON = {
         command: "textCol",
         colR: redSlider.value,
         colG: greenSlider.value,
         colB: blueSlider.value
     };
 
-    console.log(msg);
-
-    var topic = "SmartDisplay";
-    message = new Paho.MQTT.Message(JSON.stringify(msg));
-    message.destinationName = topic;
-    mqtt.send(message);
+    MQTTSendJSONData();
 }
 
 function onConnectionLost() {
@@ -227,7 +224,6 @@ function onFailure(message) {
 function onMessageArrived(r_message) {
     out_msg = "Message received " + r_message.payloadString + "<br>";
     out_msg = out_msg + "Message received Topic " + r_message.destinationName;
-    //console.log("Message received ",r_message.payloadString);
     console.log(out_msg);
     document.getElementById("messages").innerHTML = out_msg;
 }
@@ -237,7 +233,6 @@ function onConnected(recon, url) {
 }
 
 function onConnect() {
-    // Once a connection has been made, make a subscription and send a message.
     document.getElementById("messages").innerHTML = "Connected to " + host + " on port " + port;
     connected_flag = 1
     document.getElementById("status").innerHTML = "Connected";
@@ -251,12 +246,14 @@ function MQTTconnect() {
     if (p != "") {
         console.log("ports");
         port = parseInt(p);
+        localStorage.MQTTport = port;
         console.log("port" + port);
     } else {
         port = localStorage.MQTTport;
     }
     if (s != "") {
         host = s;
+        localStorage.MQTThost = host;
         console.log("host");
     } else {
         host = localStorage.MQTThost;
@@ -264,7 +261,7 @@ function MQTTconnect() {
 
     console.log("connecting to " + host + " " + port);
     mqtt = new Paho.MQTT.Client(host, port, "clientjsaaa");
-    //document.write("connecting to "+ host);
+
     var options = {
         timeout: 3,
         onSuccess: onConnect,
